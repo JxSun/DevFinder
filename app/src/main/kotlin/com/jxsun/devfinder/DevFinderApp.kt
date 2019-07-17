@@ -1,6 +1,8 @@
 package com.jxsun.devfinder
 
 import android.app.Application
+import com.jxsun.devfinder.di.appModule
+import org.koin.core.context.startKoin
 import timber.log.Timber
 
 class DevFinderApp : Application() {
@@ -9,5 +11,7 @@ class DevFinderApp : Application() {
         super.onCreate()
 
         Timber.plant(Timber.DebugTree())
+
+        startKoin { modules(appModule) }
     }
 }
