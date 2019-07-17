@@ -5,14 +5,15 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import com.jakewharton.rxbinding2.view.RxView
+import com.jakewharton.rxbinding3.view.clicks
 import com.jxsun.devfinder.R
 import com.jxsun.devfinder.model.GitHubUser
-import com.jxsun.devfinder.util.ViewModelFactory
 import com.jxsun.devfinder.util.plusAssign
 import io.reactivex.Observable
+import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import kotlinx.android.synthetic.main.fragment_devlist.*
+import org.koin.androidx.viewmodel.ext.android.viewModel
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
 
@@ -24,7 +25,7 @@ class DevListFragment : Fragment() {
         fun newInstance() = DevListFragment()
     }
 
-    private lateinit var viewModel: DevListViewModel
+    private val devListViewModel: DevListViewModel by viewModel()
     private val disposables = CompositeDisposable()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -34,10 +35,8 @@ class DevListFragment : Fragment() {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
 
-        viewModel = ViewModelFactory.getInstance(this.context!!).create(DevListViewModel::class.java)
-
-        disposables += viewModel.states().subscribe(this::render)
-        viewModel.processIntent(intents())
+        disposables += devListViewModel.states().observeOn(AndroidSchedulers.mainThread()).subscribe(this::render)
+        devListViewModel.processIntent(intents())
     }
 
     private fun intents(): Observable<DevListIntent> {
@@ -48,7 +47,7 @@ class DevListFragment : Fragment() {
     }
 
     private fun searchIntent(): Observable<DevListIntent> {
-        return RxView.clicks(searchBtn)
+        return searchBtn.clicks()
                 .throttleFirst(300, TimeUnit.MILLISECONDS)
                 .filter { searchBar.text.toString().isNotBlank() }
                 .map {
@@ -79,7 +78,9 @@ class DevListFragment : Fragment() {
     }
 
     private fun showDevelopers(devList: List<GitHubUser>) {
-
+        devList.forEach {
+            Timber.v("dev: $it")
+        }
     }
 
     override fun onDestroyView() {
