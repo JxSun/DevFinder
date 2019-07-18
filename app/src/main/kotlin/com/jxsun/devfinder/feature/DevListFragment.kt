@@ -1,14 +1,21 @@
 package com.jxsun.devfinder.feature
 
+import android.animation.Animator
+import android.graphics.Rect
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.DecelerateInterpolator
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.DividerItemDecoration
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.bartoszlipinski.viewpropertyobjectanimator.ViewPropertyObjectAnimator
 import com.jakewharton.rxbinding3.view.clicks
 import com.jxsun.devfinder.R
 import com.jxsun.devfinder.model.GitHubUser
-import com.jxsun.devfinder.util.plusAssign
+import com.jxsun.devfinder.util.extention.hideSoftInput
+import com.jxsun.devfinder.util.extention.plusAssign
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
@@ -27,6 +34,8 @@ class DevListFragment : Fragment() {
 
     private val devListViewModel: DevListViewModel by viewModel()
     private val disposables = CompositeDisposable()
+    private val recyclerViewAdapter = DevListRecyclerViewAdapter()
+    private val onScrollListener = OnRecyclerViewScrollListener()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_devlist, container, false)
@@ -35,6 +44,14 @@ class DevListFragment : Fragment() {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
 
+        with(recyclerView) {
+            adapter = recyclerViewAdapter
+            layoutManager = LinearLayoutManager(this.context)
+            addItemDecoration(DividerItemDecoration(this.context, DividerItemDecoration.VERTICAL))
+            addOnScrollListener(onScrollListener)
+            setHasFixedSize(true)
+        }
+
         disposables += devListViewModel.states().observeOn(AndroidSchedulers.mainThread()).subscribe(this::render)
         devListViewModel.processIntent(intents())
     }
@@ -42,20 +59,31 @@ class DevListFragment : Fragment() {
     private fun intents(): Observable<DevListIntent> {
         return Observable.merge(
                 Observable.just(DevListIntent.InitialIntent),
-                searchIntent()
+                searchIntent(),
+                loadMoreIntent()
         )
     }
 
     private fun searchIntent(): Observable<DevListIntent> {
         return searchBtn.clicks()
                 .throttleFirst(300, TimeUnit.MILLISECONDS)
-                .filter { searchBar.text.toString().isNotBlank() }
+                .filter { searchInput.text.toString().isNotBlank() }
                 .map {
                     DevListIntent.SearchIntent(
-                            keyword = searchBar.text.toString()
+                            keyword = searchInput.text.toString()
                     )
                 }
                 .cast(DevListIntent::class.java)
+                .doOnNext { hideSoftInput() }
+    }
+
+    private fun loadMoreIntent(): Observable<DevListIntent> {
+        return onScrollListener.reloadSubject
+                .map {
+                    DevListIntent.LoadMoreIntent(
+                            keyword = searchInput.text.toString()
+                    )
+                }
     }
 
     fun render(state: DevListViewState) {
@@ -68,8 +96,43 @@ class DevListFragment : Fragment() {
 
         if (state.error != null) {
             showError()
-        } else if (state.userList.isNotEmpty()) {
-            showDevelopers(state.userList)
+        } else if (state.userList.isNotEmpty() && !state.isLoading) {
+            if (state.firstShow) {
+                val offsetViewBounds = Rect()
+                searchBar.getDrawingRect(offsetViewBounds)
+                container.offsetDescendantRectToMyCoords(searchBar, offsetViewBounds)
+
+                ViewPropertyObjectAnimator
+                        .animate(searchBar)
+                        .setDuration(500)
+                        .setInterpolator(DecelerateInterpolator())
+                        .margin(0)
+                        .translationY(-offsetViewBounds.top.toFloat())
+                        .addListener(object : Animator.AnimatorListener {
+                            override fun onAnimationRepeat(animation: Animator?) {
+                            }
+
+                            override fun onAnimationEnd(animation: Animator?) {
+                                searchBar.clearAnimation()
+                                recyclerView.visibility = View.VISIBLE
+                                showDevelopers(state.keyword, state.userList)
+                                searchBar.visibility = View.VISIBLE
+                                searchBar.isClickable = true
+                            }
+
+                            override fun onAnimationCancel(animation: Animator?) {
+                            }
+
+                            override fun onAnimationStart(animation: Animator?) {
+                            }
+                        })
+                        .start()
+
+                searchBar.isClickable = false
+                searchInput.setText(state.keyword)
+            } else {
+                showDevelopers(state.keyword, state.userList)
+            }
         }
     }
 
@@ -77,14 +140,13 @@ class DevListFragment : Fragment() {
 
     }
 
-    private fun showDevelopers(devList: List<GitHubUser>) {
-        devList.forEach {
-            Timber.v("dev: $it")
-        }
+    private fun showDevelopers(keyword: String, devList: List<GitHubUser>) {
+        recyclerViewAdapter.addDevList(keyword, devList)
     }
 
     override fun onDestroyView() {
-        super.onDestroyView()
         disposables.clear()
+        recyclerView?.adapter = null
+        super.onDestroyView()
     }
 }
