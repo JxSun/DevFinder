@@ -3,7 +3,7 @@ package com.jxsun.devfinder.feature
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.jxsun.devfinder.R
-import com.jxsun.devfinder.util.transaction
+import com.jxsun.devfinder.util.extention.transaction
 
 class DevListActivity : AppCompatActivity() {
 

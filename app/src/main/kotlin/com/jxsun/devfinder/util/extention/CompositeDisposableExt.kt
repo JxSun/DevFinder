@@ -1,4 +1,4 @@
-package com.jxsun.devfinder.util
+package com.jxsun.devfinder.util.extention
 
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
