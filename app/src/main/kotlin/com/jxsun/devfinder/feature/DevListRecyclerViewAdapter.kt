@@ -6,9 +6,9 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
 import com.jxsun.devfinder.R
 import com.jxsun.devfinder.model.GitHubUser
+import com.jxsun.devfinder.util.GlideApp
 import kotlinx.android.synthetic.main.item_devlist.view.*
 
 class DevListRecyclerViewAdapter : RecyclerView.Adapter<DevListRecyclerViewAdapter.ViewHolder>() {
@@ -47,8 +47,9 @@ class DevListRecyclerViewAdapter : RecyclerView.Adapter<DevListRecyclerViewAdapt
 
         fun bind(user: GitHubUser) {
             name.text = user.loginName
-            Glide.with(itemView.context)
+            GlideApp.with(itemView.context)
                     .load(user.avatarUrl)
+                    .placeholder(R.drawable.ic_launcher_foreground)
                     .into(avatar)
         }
     }
