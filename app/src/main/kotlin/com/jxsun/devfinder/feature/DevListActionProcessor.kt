@@ -42,7 +42,7 @@ class DevListActionProcessor(
             upstream.flatMap<DevListResult> { action ->
                 Timber.v("search: ${action.keyword}, next: ${action.nextPage}, last: ${action.lastPage}")
                 when {
-                    action.lastPage == 0 -> userRepository.query(keyword = action.keyword, nextPage = 1)
+                    action.lastPage == -1 -> userRepository.query(keyword = action.keyword, nextPage = 1)
                     action.nextPage < action.lastPage -> userRepository.query(keyword = action.keyword, nextPage = action.nextPage)
                     else -> // Already reach the end
                         Single.just(Repository.GitHubUserResult(

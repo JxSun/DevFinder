@@ -22,7 +22,7 @@ class AppPreferences(
         }
 
     var nextPage: Int
-        get() = preferences.getInt(KEY_NEXT_PAGE, 0)
+        get() = preferences.getInt(KEY_NEXT_PAGE, -1)
         set(value) {
             preferences.edit {
                 it.putInt(KEY_NEXT_PAGE, value)
@@ -30,7 +30,7 @@ class AppPreferences(
         }
 
     var lastPage: Int
-        get() = preferences.getInt(KEY_MAX_PAGE, 0)
+        get() = preferences.getInt(KEY_MAX_PAGE, -1)
         set(value) {
             preferences.edit {
                 it.putInt(KEY_MAX_PAGE, value)

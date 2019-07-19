@@ -15,7 +15,7 @@ import timber.log.Timber
 class DevListRecyclerViewAdapter : RecyclerView.Adapter<DevListRecyclerViewAdapter.ViewHolder>() {
 
     private var keyword = ""
-    private var nextPage = 0
+    private var nextPage = -1
     private val devList = mutableListOf<GitHubUser>()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {

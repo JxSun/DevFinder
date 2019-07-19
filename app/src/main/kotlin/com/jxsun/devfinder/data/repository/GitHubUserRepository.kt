@@ -43,8 +43,8 @@ class GitHubUserRepository(
                 Single.just(
                         Repository.GitHubUserResult(
                                 keyword = "",
-                                nextPage = 0,
-                                lastPage = 0,
+                                nextPage = -1,
+                                lastPage = -1,
                                 users = listOf()
                         )
                 )
@@ -57,8 +57,8 @@ class GitHubUserRepository(
             // query with new keyword or re-query
             if (keyword != preferences.keyword || nextPage == 1) {
                 preferences.keyword = keyword
-                preferences.nextPage = 0
-                preferences.lastPage = 0
+                preferences.nextPage = -1
+                preferences.lastPage = -1
                 userDao.clear()
             }
             keyword
@@ -92,8 +92,8 @@ class GitHubUserRepository(
     override fun clear(): Completable {
         return Completable.fromAction {
             preferences.keyword = ""
-            preferences.nextPage = 0
-            preferences.lastPage = 0
+            preferences.nextPage = -1
+            preferences.lastPage = -1
             userDao.clear()
         }
     }

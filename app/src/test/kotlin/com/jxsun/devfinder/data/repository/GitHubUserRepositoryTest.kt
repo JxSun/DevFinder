@@ -77,8 +77,8 @@ class GitHubUserRepositoryTest {
         val testObservable = sut.loadCached().test()
 
         testObservable.assertValue { it.keyword == "" }
-        testObservable.assertValue { it.nextPage == 0 }
-        testObservable.assertValue { it.lastPage == 0 }
+        testObservable.assertValue { it.nextPage == -1 }
+        testObservable.assertValue { it.lastPage == -1 }
         testObservable.assertValue { it.users.isEmpty() }
     }
 

@@ -98,7 +98,7 @@ class DevListFragment : Fragment() {
 
         if (state.error != null) {
             showError(state.error)
-        } else if (state.userList.isNotEmpty() && !state.isLoading) {
+        } else if (!state.isLoading) {
             searchInput.setText(state.keyword)
             showDevelopers(state.keyword, state.nextPage, state.userList)
         }

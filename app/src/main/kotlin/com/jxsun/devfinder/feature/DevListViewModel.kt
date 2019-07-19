@@ -74,8 +74,8 @@ class DevListViewModel(
             is DevListIntent.InitialIntent -> DevListAction.InitialAction
             is DevListIntent.SearchIntent -> DevListAction.SearchAction(
                     keyword = intent.keyword,
-                    nextPage = 0,
-                    lastPage = 0
+                    nextPage = -1,
+                    lastPage = -1
             )
             is DevListIntent.LoadMoreIntent -> DevListAction.LoadMoreAction(
                     keyword = intent.keyword,
