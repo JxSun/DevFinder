@@ -16,6 +16,7 @@ class DevListActionProcessor(
         return ObservableTransformer { action ->
             action.flatMap<DevListResult> {
                 userRepository.loadCached()
+                        .subscribeOn(Schedulers.io())
                         .toObservable()
                         .map {
                             DevListResult.Success(
@@ -24,7 +25,7 @@ class DevListActionProcessor(
                             )
                         }
                         .cast(DevListResult::class.java)
-                        .startWith(DevListResult.InProgress)
+                        .startWith(DevListResult.InProgress(keyword = ""))
             }
         }
     }
@@ -33,7 +34,7 @@ class DevListActionProcessor(
         return ObservableTransformer { action ->
             action.flatMap<DevListResult> {
                 Timber.v("search for ${it.keyword}")
-                userRepository.query(keyword = it.keyword)
+                userRepository.query(keyword = it.keyword, forceFetch = true)
                         .subscribeOn(Schedulers.io())
                         .toObservable()
                         .map { result ->
@@ -43,7 +44,7 @@ class DevListActionProcessor(
                             )
                         }
                         .cast(DevListResult::class.java)
-                        .startWith(DevListResult.InProgress)
+                        .startWith(DevListResult.InProgress(keyword = it.keyword))
             }
         }
     }
@@ -64,7 +65,7 @@ class DevListActionProcessor(
                             )
                         }
                         .cast(DevListResult::class.java)
-                        .startWith(DevListResult.InProgress)
+                        .startWith(DevListResult.InProgress(keyword = it.keyword))
             }
         }
     }

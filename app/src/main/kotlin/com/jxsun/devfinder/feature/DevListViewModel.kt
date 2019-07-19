@@ -28,6 +28,7 @@ class DevListViewModel(
         Timber.d("result: $result")
         when (result) {
             is DevListResult.InProgress -> prevState.copy(
+                    keyword = result.keyword,
                     isLoading = true
             )
             is DevListResult.Success -> prevState.copy(

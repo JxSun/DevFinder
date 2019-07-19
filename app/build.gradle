@@ -38,6 +38,14 @@ android {
         test.java.srcDirs += 'src/test/kotlin'
         androidTest.java.srcDirs += 'src/androidTest/kotlin'
     }
+
+    testOptions {
+        unitTests.all {
+            testLogging {
+                events 'passed', 'skipped', 'failed', 'standardOut', 'standardError'
+            }
+        }
+    }
 }
 
 dependencies {
@@ -72,6 +80,7 @@ dependencies {
     implementation "com.squareup.retrofit2:adapter-rxjava2:${versions.retrofit}"
     implementation "com.squareup.retrofit2:converter-gson:${versions.retrofit}"
     implementation "com.squareup.okhttp3:logging-interceptor:${versions.okhttp}"
+    implementation "com.squareup.okhttp3:mockwebserver:${versions.okhttp}"
 
     implementation 'com.bartoszlipinski:viewpropertyobjectanimator:1.4.5'
 
