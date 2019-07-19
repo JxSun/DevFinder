@@ -10,7 +10,6 @@ import com.jxsun.devfinder.R
 import com.jxsun.devfinder.model.GitHubUser
 import com.jxsun.devfinder.util.GlideApp
 import kotlinx.android.synthetic.main.item_devlist.view.*
-import timber.log.Timber
 
 class DevListRecyclerViewAdapter : RecyclerView.Adapter<DevListRecyclerViewAdapter.ViewHolder>() {
 

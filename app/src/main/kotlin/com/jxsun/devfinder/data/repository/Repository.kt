@@ -13,9 +13,9 @@ interface Repository<T> {
     fun clear(): Completable
 
     data class GitHubUserResult(
-            val keyword: String,
-            val nextPage: Int,
-            val lastPage: Int,
-            val users: List<GitHubUser>
+            val keyword: String = "",
+            val nextPage: Int = -1,
+            val lastPage: Int = -1,
+            val users: List<GitHubUser> = listOf()
     )
 }

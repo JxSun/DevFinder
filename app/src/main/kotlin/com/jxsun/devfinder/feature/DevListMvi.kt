@@ -22,8 +22,8 @@ sealed class DevListAction : MviAction {
     object InitialAction : DevListAction()
     data class SearchAction(
             val keyword: String,
-            val nextPage: Int,
-            val lastPage: Int
+            val nextPage: Int = -1,
+            val lastPage: Int = -1
     ) : DevListAction()
     data class LoadMoreAction(
             val keyword: String,
