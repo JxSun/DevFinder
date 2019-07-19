@@ -6,17 +6,13 @@ import com.jxsun.devfinder.data.local.LocalDataMapper
 import com.jxsun.devfinder.data.local.database.GitHubUserDao
 import com.jxsun.devfinder.data.remote.GitHubService
 import com.jxsun.devfinder.data.remote.RemoteDataMapper
+import com.jxsun.devfinder.data.remote.ResultDataParser
 import com.jxsun.devfinder.model.GitHubUser
-import com.jxsun.devfinder.model.exception.ClientException
 import com.jxsun.devfinder.model.exception.NoConnectionException
-import com.jxsun.devfinder.model.exception.ServerException
-import com.jxsun.devfinder.model.exception.UnknownAccessException
 import com.jxsun.devfinder.util.NetworkChecker
 import io.reactivex.Completable
 import io.reactivex.Single
-import okhttp3.Headers
 import timber.log.Timber
-import java.util.regex.Pattern
 
 class GitHubUserRepository(
         private val gitHubService: GitHubService,
@@ -33,13 +29,15 @@ class GitHubUserRepository(
 
     @Volatile
     @VisibleForTesting
-    var maxPage = 1
+    var lastPage = 1
+
+    private val resultDataParser = ResultDataParser()
 
     override fun loadCached(): Single<Repository.CachedGitHubUsers> {
         return Single.defer {
             val keyword = preferences.keyword
             nextPage = preferences.nextPage
-            maxPage = preferences.maxPage
+            lastPage = preferences.lastPage
             if (keyword.isNotBlank()) {
                 userDao.getAll()
                         .firstOrError()
@@ -65,44 +63,34 @@ class GitHubUserRepository(
         return Single.fromCallable {
             if (keyword != preferences.keyword) {
                 preferences.keyword = keyword
-                nextPage = 1
-                maxPage = 1
+                nextPage = 0
+                lastPage = 0
                 userDao.clear()
             }
             keyword
         }.flatMap {
             if (networkChecker.isNetworkConnected()) {
-                gitHubService.getUsers(keyword, nextPage)
+                if (lastPage == 0 // just being reset
+                        || nextPage < lastPage) { // not reach the end yet
+                    Timber.d("start fetching page $nextPage")
+                    gitHubService.getUsers(keyword, nextPage)
+                            .compose(resultDataParser.parse())
+                            .map {
+                                nextPage = it.link.nextPage
+                                lastPage = it.link.lastPage
+                                it.userDataList.map(remoteDataMapper::toModel)
+                            }
+                } else {
+                    Timber.d("already reach the end: $lastPage")
+                    Single.just(listOf())
+                }
             } else {
                 Single.error(NoConnectionException())
             }
-        }.map { result ->
-            // Check http response status
-            val httpCode = result.response()?.code()
-            if (httpCode != null) {
-                when {
-                    httpCode in 400..499 -> throw ClientException(httpCode)
-                    httpCode >= 500 -> throw ServerException(httpCode)
-                }
-            }
-            if (result.isError) {
-                result.error()?.let { throw it } ?: throw UnknownAccessException(httpCode)
-            }
-
-            parsePagingInfo(result.response()?.headers())
-                    .also { linkDataList ->
-                        nextPage = linkDataList.find { data -> data.linkIndicator == "next" }?.number
-                                ?: 1
-                        maxPage = linkDataList.find { data -> data.linkIndicator == "last" }?.number
-                                ?: 1
-                        Timber.d("link: next=$nextPage, max=$maxPage")
-                    }
-
-            result.response()?.body()?.items?.map(remoteDataMapper::toModel) ?: listOf()
         }.doOnSuccess {
             preferences.keyword = keyword
             preferences.nextPage = nextPage
-            preferences.maxPage = maxPage
+            preferences.lastPage = lastPage
 
             it.forEach { user ->
                 userDao.upsert(localDataMapper.fromModel(user))
@@ -110,44 +98,12 @@ class GitHubUserRepository(
         }
     }
 
-    private fun parsePagingInfo(headers: Headers?): List<LinkData> {
-        return headers?.get("Link")?.let { data ->
-            val pattern = Pattern.compile("(?<=page=)(\\d+)|(?<=rel=\").+?(?=\")")
-            val matcher = pattern.matcher(data)
-            val list = mutableListOf<LinkData>()
-            var parseNumber = true
-            var number = 0
-            var indicator: String
-            while (matcher.find()) {
-                if (parseNumber) {
-                    number = matcher.group().toInt()
-                    parseNumber = false
-                } else {
-                    indicator = matcher.group()
-                    list.add(
-                            LinkData(
-                                    linkIndicator = indicator,
-                                    number = number
-                            )
-                    )
-                    parseNumber = true
-                }
-            }
-            list
-        } ?: listOf()
-    }
-
     override fun clear(): Completable {
         return Completable.fromAction {
             preferences.keyword = ""
-            preferences.nextPage = 1
-            preferences.maxPage = 1
+            preferences.nextPage = 0
+            preferences.lastPage = 0
             userDao.clear()
         }
     }
-
-    data class LinkData(
-            val linkIndicator: String,
-            val number: Int
-    )
 }

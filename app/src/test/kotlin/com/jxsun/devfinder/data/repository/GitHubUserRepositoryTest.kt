@@ -73,14 +73,14 @@ class GitHubUserRepositoryTest {
     fun `load cached data and nothing found`() {
         doReturn("").`when`(preferences).keyword
         doReturn(1).`when`(preferences).nextPage
-        doReturn(1).`when`(preferences).maxPage
+        doReturn(1).`when`(preferences).lastPage
 
         val testObservable = sut.loadCached().test()
 
         testObservable.assertValue { it.keyword == "" }
         testObservable.assertValue { it.users.isEmpty() }
         assertEquals(1, sut.nextPage)
-        assertEquals(1, sut.maxPage)
+        assertEquals(1, sut.lastPage)
     }
 
     @Test
@@ -92,7 +92,7 @@ class GitHubUserRepositoryTest {
         )
         doReturn("Josh").`when`(preferences).keyword
         doReturn(5).`when`(preferences).nextPage
-        doReturn(50).`when`(preferences).maxPage
+        doReturn(50).`when`(preferences).lastPage
         doReturn(Flowable.just(listOf(entity))).`when`(userDao).getAll()
 
         val testObservable = sut.loadCached().test()
@@ -104,7 +104,7 @@ class GitHubUserRepositoryTest {
             }
         }
         assertEquals(5, sut.nextPage)
-        assertEquals(50, sut.maxPage)
+        assertEquals(50, sut.lastPage)
     }
 
     @Test
@@ -152,7 +152,7 @@ class GitHubUserRepositoryTest {
             it.size == 1 && it[0].loginName == "mojombo"
         }
         assertEquals(2, sut.nextPage)
-        assertEquals(5, sut.maxPage)
+        assertEquals(5, sut.lastPage)
     }
 
     @Test
@@ -165,8 +165,8 @@ class GitHubUserRepositoryTest {
         val testObserver = sut.query("Josh", true).test()
 
         testObserver.assertError { it is NoConnectionException }
-        assertEquals(1, sut.nextPage)
-        assertEquals(1, sut.maxPage)
+        assertEquals(0, sut.nextPage)
+        assertEquals(0, sut.lastPage)
     }
 
     @Test
@@ -185,8 +185,8 @@ class GitHubUserRepositoryTest {
         val testObserver = sut.query("Josh", true).test()
 
         testObserver.assertError { it is ServerException }
-        assertEquals(1, sut.nextPage)
-        assertEquals(1, sut.maxPage)
+        assertEquals(0, sut.nextPage)
+        assertEquals(0, sut.lastPage)
     }
 }
 

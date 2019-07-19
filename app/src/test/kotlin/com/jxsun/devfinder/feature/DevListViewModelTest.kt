@@ -48,10 +48,10 @@ class DevListViewModelTest {
 
         verify(actionProcessor).process()
         testObserver.assertValueAt(1) {
-            it.firstShow && it.isLoading && it.keyword.isEmpty() && it.userList.isEmpty() && it.error == null
+            it.isLoading && it.keyword.isEmpty() && it.userList.isEmpty() && it.error == null
         }
         testObserver.assertValueAt(2) {
-            it.firstShow && !it.isLoading && it.keyword.isEmpty() && it.userList.isEmpty() && it.error == null
+            !it.isLoading && it.keyword.isEmpty() && it.userList.isEmpty() && it.error == null
         }
     }
 
@@ -81,10 +81,10 @@ class DevListViewModelTest {
 
         verify(actionProcessor).process()
         testObserver.assertValueAt(1) {
-            it.firstShow && it.isLoading && it.keyword == keyword && it.userList.isEmpty() && it.error == null
+            it.isLoading && it.keyword == keyword && it.userList.isEmpty() && it.error == null
         }
         testObserver.assertValueAt(2) {
-            it.firstShow && !it.isLoading && it.keyword == keyword && it.userList.size == 1 && it.error == null
+            !it.isLoading && it.keyword == keyword && it.userList.size == 1 && it.error == null
         }
     }
 
@@ -114,10 +114,10 @@ class DevListViewModelTest {
 
         verify(actionProcessor).process()
         testObserver.assertValueAt(1) {
-            it.firstShow && it.isLoading && it.keyword == keyword && it.userList.isEmpty() && it.error == null
+            it.isLoading && it.keyword == keyword && it.userList.isEmpty() && it.error == null
         }
         testObserver.assertValueAt(2) {
-            it.firstShow && !it.isLoading && it.keyword == keyword && it.userList.size == 1 && it.error == null
+            !it.isLoading && it.keyword == keyword && it.userList.size == 1 && it.error == null
         }
     }
 }
