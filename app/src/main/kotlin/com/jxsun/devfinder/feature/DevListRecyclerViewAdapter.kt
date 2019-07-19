@@ -10,10 +10,12 @@ import com.jxsun.devfinder.R
 import com.jxsun.devfinder.model.GitHubUser
 import com.jxsun.devfinder.util.GlideApp
 import kotlinx.android.synthetic.main.item_devlist.view.*
+import timber.log.Timber
 
 class DevListRecyclerViewAdapter : RecyclerView.Adapter<DevListRecyclerViewAdapter.ViewHolder>() {
 
     private var keyword = ""
+    private var nextPage = 0
     private val devList = mutableListOf<GitHubUser>()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -30,11 +32,15 @@ class DevListRecyclerViewAdapter : RecyclerView.Adapter<DevListRecyclerViewAdapt
         holder.bind(devList[position])
     }
 
-    fun addDevList(newKeyword: String, list: List<GitHubUser>) {
-        if (keyword != newKeyword) {
-            keyword = newKeyword
+    fun updateDevList(newKeyword: String, nextPage: Int, list: List<GitHubUser>) {
+        if (this.keyword != newKeyword || this.nextPage > nextPage) {
             devList.clear()
+        } else if (this.keyword == newKeyword && this.nextPage == nextPage) {
+            // Data should be the same, just skip
+            return
         }
+        this.keyword = newKeyword
+        this.nextPage = nextPage
         devList.addAll(list)
         notifyDataSetChanged()
     }

@@ -40,7 +40,7 @@ class DevListActionProcessorTest {
 
     @Test
     fun `perform initial action and load data back successfully`() {
-        doReturn(Single.just(Repository.CachedGitHubUsers(keyword = keyword, users = users)))
+        doReturn(Single.just(Repository.GitHubUserResult(keyword = keyword, nextPage = 5, lastPage = 100, users = users)))
                 .`when`(userRepository)
                 .loadCached()
 
@@ -49,26 +49,31 @@ class DevListActionProcessorTest {
                 .test()
 
         testObserver.assertValueCount(2)
-        testObserver.assertValueAt(0, DevListResult.InProgress(keyword = ""))
-        testObserver.assertValueAt(1, DevListResult.Success(keyword = keyword, userList = users))
+        testObserver.assertValueAt(0, DevListResult.InProgress(keyword = "", nextPage = 0, lastPage = 0))
+        testObserver.assertValueAt(1, DevListResult.Success(keyword = keyword, nextPage = 5, lastPage = 100, userList = users))
     }
 
     @Test
     fun `perform search action successfully`() {
-        doReturn(Single.just(users))
+        doReturn(Single.just(Repository.GitHubUserResult(
+                keyword = keyword,
+                nextPage = 2,
+                lastPage = 100,
+                users = users
+        )))
                 .`when`(userRepository)
                 .query(
                         keyword = keyword,
-                        forceFetch = true
+                        nextPage = 1
                 )
 
-        val testObserver = Observable.just(DevListAction.SearchAction(keyword = keyword))
+        val testObserver = Observable.just(DevListAction.SearchAction(keyword = keyword, nextPage = 1, lastPage = 100))
                 .compose(sut.process())
                 .test()
 
         testObserver.assertValueCount(2)
-        testObserver.assertValueAt(0, DevListResult.InProgress(keyword = keyword))
-        testObserver.assertValueAt(1, DevListResult.Success(keyword = keyword, userList = users))
+        testObserver.assertValueAt(0, DevListResult.InProgress(keyword = keyword, nextPage = 1, lastPage = 100))
+        testObserver.assertValueAt(1, DevListResult.Success(keyword = keyword, nextPage = 2, lastPage = 100, userList = users))
     }
 
     @Test
@@ -78,37 +83,34 @@ class DevListActionProcessorTest {
                 .`when`(userRepository)
                 .query(
                         keyword = keyword,
-                        forceFetch = true
+                        nextPage = 1
                 )
 
-        val testObserver = Observable.just(DevListAction.SearchAction(keyword = keyword))
+        val testObserver = Observable.just(DevListAction.SearchAction(keyword = keyword, nextPage = 1, lastPage = 100))
                 .compose(sut.process())
                 .test()
 
-        testObserver.values().forEach {
-            println(it)
-        }
         testObserver.assertValueCount(2)
-        testObserver.assertValueAt(0, DevListResult.InProgress(keyword = keyword))
-        testObserver.assertValueAt(1, DevListResult.Failure(keyword = keyword, error = exception))
+        testObserver.assertValueAt(0, DevListResult.InProgress(keyword = keyword, nextPage = 1, lastPage = 100))
+        testObserver.assertValueAt(1, DevListResult.Failure(keyword = keyword, nextPage = 1, lastPage = 100, error = exception))
     }
 
     @Test
     fun `perform load more action successfully`() {
-        doReturn(Single.just(users))
+        doReturn(Single.just(Repository.GitHubUserResult(keyword = keyword, nextPage = 3, lastPage = 100, users = users)))
                 .`when`(userRepository)
                 .query(
                         keyword = keyword,
-                        forceFetch = true
+                        nextPage = 2
                 )
 
-        val testObserver = Observable.just(DevListAction.LoadMoreAction(keyword = keyword))
+        val testObserver = Observable.just(DevListAction.LoadMoreAction(keyword = keyword, nextPage = 2, lastPage = 100))
                 .compose(sut.process())
                 .test()
 
         testObserver.assertValueCount(2)
-        testObserver.assertValueAt(0, DevListResult.InProgress(keyword = keyword))
-        testObserver.assertValueAt(1, DevListResult.Success(keyword = keyword, userList = users))
+        testObserver.assertValueAt(0, DevListResult.InProgress(keyword = keyword, nextPage = 2, lastPage = 100))
+        testObserver.assertValueAt(1, DevListResult.Success(keyword = keyword, nextPage = 3, lastPage = 100, userList = users))
     }
 
     @Test
@@ -118,18 +120,15 @@ class DevListActionProcessorTest {
                 .`when`(userRepository)
                 .query(
                         keyword = keyword,
-                        forceFetch = true
+                        nextPage = 2
                 )
 
-        val testObserver = Observable.just(DevListAction.LoadMoreAction(keyword = keyword))
+        val testObserver = Observable.just(DevListAction.LoadMoreAction(keyword = keyword, nextPage = 2, lastPage = 100))
                 .compose(sut.process())
                 .test()
 
-        testObserver.values().forEach {
-            println(it)
-        }
         testObserver.assertValueCount(2)
-        testObserver.assertValueAt(0, DevListResult.InProgress(keyword = keyword))
-        testObserver.assertValueAt(1, DevListResult.Failure(keyword = keyword, error = exception))
+        testObserver.assertValueAt(0, DevListResult.InProgress(keyword = keyword, nextPage = 2, lastPage = 100))
+        testObserver.assertValueAt(1, DevListResult.Failure(keyword = keyword, nextPage = 2, lastPage = 100, error = exception))
     }
 }

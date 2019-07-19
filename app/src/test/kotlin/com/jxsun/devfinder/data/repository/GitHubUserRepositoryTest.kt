@@ -20,7 +20,6 @@ import io.reactivex.Single
 import okhttp3.HttpUrl
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
-import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -78,9 +77,9 @@ class GitHubUserRepositoryTest {
         val testObservable = sut.loadCached().test()
 
         testObservable.assertValue { it.keyword == "" }
+        testObservable.assertValue { it.nextPage == 0 }
+        testObservable.assertValue { it.lastPage == 0 }
         testObservable.assertValue { it.users.isEmpty() }
-        assertEquals(1, sut.nextPage)
-        assertEquals(1, sut.lastPage)
     }
 
     @Test
@@ -98,13 +97,13 @@ class GitHubUserRepositoryTest {
         val testObservable = sut.loadCached().test()
 
         testObservable.assertValue { it.keyword == "Josh" }
+        testObservable.assertValue { it.nextPage == 5 }
+        testObservable.assertValue { it.lastPage == 50 }
         testObservable.assertValue {
             it.users.size == 1 && it.users[0].run {
                 this.id == entity.id && this.loginName == entity.loginName && this.avatarUrl == entity.avatarUrl
             }
         }
-        assertEquals(5, sut.nextPage)
-        assertEquals(50, sut.lastPage)
     }
 
     @Test
@@ -146,13 +145,13 @@ class GitHubUserRepositoryTest {
 
         )
 
-        val testObserver = sut.query("Josh", true).test()
+        val testObserver = sut.query("Josh", 1).test()
 
         testObserver.assertValue {
-            it.size == 1 && it[0].loginName == "mojombo"
+            it.users.size == 1 && it.users[0].loginName == "mojombo"
         }
-        assertEquals(2, sut.nextPage)
-        assertEquals(5, sut.lastPage)
+        testObserver.assertValue { it.nextPage == 2 }
+        testObserver.assertValue { it.lastPage == 5 }
     }
 
     @Test
@@ -162,11 +161,9 @@ class GitHubUserRepositoryTest {
         doNothing().`when`(userDao).clear()
         doNothing().`when`(userDao).upsert(any())
 
-        val testObserver = sut.query("Josh", true).test()
+        val testObserver = sut.query("Josh", 1).test()
 
         testObserver.assertError { it is NoConnectionException }
-        assertEquals(0, sut.nextPage)
-        assertEquals(0, sut.lastPage)
     }
 
     @Test
@@ -182,11 +179,9 @@ class GitHubUserRepositoryTest {
                         .setStatus("HTTP/1.1 500 Internal Server Error")
         )
 
-        val testObserver = sut.query("Josh", true).test()
+        val testObserver = sut.query("Josh", 1).test()
 
         testObserver.assertError { it is ServerException }
-        assertEquals(0, sut.nextPage)
-        assertEquals(0, sut.lastPage)
     }
 }
 

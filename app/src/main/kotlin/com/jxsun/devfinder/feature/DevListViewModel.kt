@@ -14,6 +14,8 @@ class DevListViewModel(
 
     private val intentSubject = PublishSubject.create<DevListIntent>()
 
+    var lastViewState: DevListViewState = DevListViewState.IDLE
+
     private val intentFilter = ObservableTransformer<DevListIntent, DevListIntent> {
         it.publish { shared ->
             Observable.merge(
@@ -29,16 +31,22 @@ class DevListViewModel(
         when (result) {
             is DevListResult.InProgress -> prevState.copy(
                     keyword = result.keyword,
+                    nextPage = result.nextPage,
+                    lastPage = result.lastPage,
                     isLoading = true
             )
             is DevListResult.Success -> prevState.copy(
                     keyword = result.keyword,
+                    nextPage = result.nextPage,
+                    lastPage = result.lastPage,
                     userList = result.userList,
                     isLoading = false,
                     error = null
             )
             is DevListResult.Failure -> prevState.copy(
                     keyword = result.keyword,
+                    nextPage = result.nextPage,
+                    lastPage = result.lastPage,
                     isLoading = false,
                     error = result.error
             )
@@ -58,16 +66,21 @@ class DevListViewModel(
                 .scan(DevListViewState.IDLE, viewStateReducer)
                 .replay()
                 .autoConnect(0)
+                .doOnNext { lastViewState = it }
     }
 
     private fun convertToAction(intent: DevListIntent): DevListAction {
         return when (intent) {
             is DevListIntent.InitialIntent -> DevListAction.InitialAction
             is DevListIntent.SearchIntent -> DevListAction.SearchAction(
-                    keyword = intent.keyword
+                    keyword = intent.keyword,
+                    nextPage = 0,
+                    lastPage = 0
             )
             is DevListIntent.LoadMoreIntent -> DevListAction.LoadMoreAction(
-                    keyword = intent.keyword
+                    keyword = intent.keyword,
+                    nextPage = intent.nextPage,
+                    lastPage = intent.lastPage
             )
         }
     }

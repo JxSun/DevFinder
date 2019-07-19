@@ -1,6 +1,5 @@
 package com.jxsun.devfinder.data.repository
 
-import androidx.annotation.VisibleForTesting
 import com.jxsun.devfinder.data.local.AppPreferences
 import com.jxsun.devfinder.data.local.LocalDataMapper
 import com.jxsun.devfinder.data.local.database.GitHubUserDao
@@ -23,35 +22,29 @@ class GitHubUserRepository(
         private val networkChecker: NetworkChecker
 ) : Repository<GitHubUser> {
 
-    @Volatile
-    @VisibleForTesting
-    var nextPage = 1
-
-    @Volatile
-    @VisibleForTesting
-    var lastPage = 1
-
     private val resultDataParser = ResultDataParser()
 
-    override fun loadCached(): Single<Repository.CachedGitHubUsers> {
+    override fun loadCached(): Single<Repository.GitHubUserResult> {
         return Single.defer {
             val keyword = preferences.keyword
-            nextPage = preferences.nextPage
-            lastPage = preferences.lastPage
             if (keyword.isNotBlank()) {
                 userDao.getAll()
                         .firstOrError()
                         .map {
-                            Repository.CachedGitHubUsers(
+                            Repository.GitHubUserResult(
                                     keyword = keyword,
+                                    nextPage = preferences.nextPage,
+                                    lastPage = preferences.lastPage,
                                     users = it.map(localDataMapper::toModel)
                             )
                         }
                         .doOnSuccess { Timber.d("cached loaded") }
             } else {
                 Single.just(
-                        Repository.CachedGitHubUsers(
+                        Repository.GitHubUserResult(
                                 keyword = "",
+                                nextPage = 0,
+                                lastPage = 0,
                                 users = listOf()
                         )
                 )
@@ -59,40 +52,38 @@ class GitHubUserRepository(
         }
     }
 
-    override fun query(keyword: String, forceFetch: Boolean): Single<List<GitHubUser>> {
+    override fun query(keyword: String, nextPage: Int): Single<Repository.GitHubUserResult> {
         return Single.fromCallable {
-            if (keyword != preferences.keyword) {
+            // query with new keyword or re-query
+            if (keyword != preferences.keyword || nextPage == 1) {
                 preferences.keyword = keyword
-                nextPage = 0
-                lastPage = 0
+                preferences.nextPage = 0
+                preferences.lastPage = 0
                 userDao.clear()
             }
             keyword
         }.flatMap {
             if (networkChecker.isNetworkConnected()) {
-                if (lastPage == 0 // just being reset
-                        || nextPage < lastPage) { // not reach the end yet
-                    Timber.d("start fetching page $nextPage")
-                    gitHubService.getUsers(keyword, nextPage)
-                            .compose(resultDataParser.parse())
-                            .map {
-                                nextPage = it.link.nextPage
-                                lastPage = it.link.lastPage
-                                it.userDataList.map(remoteDataMapper::toModel)
-                            }
-                } else {
-                    Timber.d("already reach the end: $lastPage")
-                    Single.just(listOf())
-                }
+                Timber.d("start fetching page $nextPage")
+                gitHubService.getUsers(keyword, nextPage)
+                        .compose(resultDataParser.parse())
+                        .map {
+                            Repository.GitHubUserResult(
+                                    keyword = keyword,
+                                    nextPage = it.link.nextPage,
+                                    lastPage = it.link.lastPage,
+                                    users = it.userDataList.map(remoteDataMapper::toModel)
+                            )
+                        }
             } else {
                 Single.error(NoConnectionException())
             }
         }.doOnSuccess {
-            preferences.keyword = keyword
-            preferences.nextPage = nextPage
-            preferences.lastPage = lastPage
+            preferences.keyword = it.keyword
+            preferences.nextPage = it.nextPage
+            preferences.lastPage = it.lastPage
 
-            it.forEach { user ->
+            it.users.forEach { user ->
                 userDao.upsert(localDataMapper.fromModel(user))
             }
         }
