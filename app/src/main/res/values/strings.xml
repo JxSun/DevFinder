@@ -2,4 +2,10 @@
     <string name="app_name">DevFinder</string>
     <string name="search_hint">Enter name, login or email</string>
     <string name="search">Search</string>
+
+    <!-- Error messages -->
+    <string name="server_error">Server has something wrong.</string>
+    <string name="client_error">DevFinder has problem to access server.</string>
+    <string name="connectivity_error">No available connection.</string>
+    <string name="unknown_error">Unknown error.</string>
 </resources>

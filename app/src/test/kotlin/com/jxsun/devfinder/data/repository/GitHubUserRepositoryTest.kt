@@ -9,6 +9,9 @@ import com.jxsun.devfinder.data.remote.GitHubResponse
 import com.jxsun.devfinder.data.remote.GitHubService
 import com.jxsun.devfinder.data.remote.RemoteDataMapper
 import com.jxsun.devfinder.data.remote.UserResponse
+import com.jxsun.devfinder.model.exception.NoConnectionException
+import com.jxsun.devfinder.model.exception.ServerException
+import com.jxsun.devfinder.util.NetworkChecker
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doNothing
 import com.nhaarman.mockitokotlin2.doReturn
@@ -34,15 +37,18 @@ class GitHubUserRepositoryTest {
     @JvmField
     val schedulers = RxImmediateSchedulerRule()
 
-    private lateinit var mockWebServer: MockWebServer
-
-    private lateinit var gitHubService: GitHubService
-
     @Mock
     private lateinit var userDao: GitHubUserDao
 
     @Mock
     private lateinit var preferences: AppPreferences
+
+    @Mock
+    private lateinit var networkChecker: NetworkChecker
+
+    private lateinit var mockWebServer: MockWebServer
+
+    private lateinit var gitHubService: GitHubService
 
     private lateinit var sut: GitHubUserRepository
 
@@ -58,7 +64,8 @@ class GitHubUserRepositoryTest {
                 userDao = userDao,
                 preferences = preferences,
                 localDataMapper = LocalDataMapper(),
-                remoteDataMapper = RemoteDataMapper()
+                remoteDataMapper = RemoteDataMapper(),
+                networkChecker = networkChecker
         )
     }
 
@@ -103,6 +110,7 @@ class GitHubUserRepositoryTest {
     @Test
     fun `query with different keyword`() {
         doReturn("Trump").`when`(preferences).keyword
+        doReturn(true).`when`(networkChecker).isNetworkConnected()
         doNothing().`when`(userDao).clear()
         doNothing().`when`(userDao).upsert(any())
 
@@ -145,6 +153,40 @@ class GitHubUserRepositoryTest {
         }
         assertEquals(2, sut.nextPage)
         assertEquals(5, sut.maxPage)
+    }
+
+    @Test
+    fun `query with different keyword but has no available connection`() {
+        doReturn("Trump").`when`(preferences).keyword
+        doReturn(false).`when`(networkChecker).isNetworkConnected()
+        doNothing().`when`(userDao).clear()
+        doNothing().`when`(userDao).upsert(any())
+
+        val testObserver = sut.query("Josh", true).test()
+
+        testObserver.assertError { it is NoConnectionException }
+        assertEquals(1, sut.nextPage)
+        assertEquals(1, sut.maxPage)
+    }
+
+    @Test
+    fun `query with different keyword but encounter server error`() {
+        doReturn("Trump").`when`(preferences).keyword
+        doReturn(true).`when`(networkChecker).isNetworkConnected()
+        doNothing().`when`(userDao).clear()
+        doNothing().`when`(userDao).upsert(any())
+
+        mockWebServer.enqueue(
+                MockResponse()
+                        .setResponseCode(500)
+                        .setStatus("HTTP/1.1 500 Internal Server Error")
+        )
+
+        val testObserver = sut.query("Josh", true).test()
+
+        testObserver.assertError { it is ServerException }
+        assertEquals(1, sut.nextPage)
+        assertEquals(1, sut.maxPage)
     }
 }
 

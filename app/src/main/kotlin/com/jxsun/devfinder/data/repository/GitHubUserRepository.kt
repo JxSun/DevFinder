@@ -7,6 +7,11 @@ import com.jxsun.devfinder.data.local.database.GitHubUserDao
 import com.jxsun.devfinder.data.remote.GitHubService
 import com.jxsun.devfinder.data.remote.RemoteDataMapper
 import com.jxsun.devfinder.model.GitHubUser
+import com.jxsun.devfinder.model.exception.ClientException
+import com.jxsun.devfinder.model.exception.NoConnectionException
+import com.jxsun.devfinder.model.exception.ServerException
+import com.jxsun.devfinder.model.exception.UnknownAccessException
+import com.jxsun.devfinder.util.NetworkChecker
 import io.reactivex.Completable
 import io.reactivex.Single
 import okhttp3.Headers
@@ -18,7 +23,8 @@ class GitHubUserRepository(
         private val userDao: GitHubUserDao,
         private val preferences: AppPreferences,
         private val localDataMapper: LocalDataMapper,
-        private val remoteDataMapper: RemoteDataMapper
+        private val remoteDataMapper: RemoteDataMapper,
+        private val networkChecker: NetworkChecker
 ) : Repository<GitHubUser> {
 
     @Volatile
@@ -65,9 +71,25 @@ class GitHubUserRepository(
             }
             keyword
         }.flatMap {
-            gitHubService.getUsers(keyword, nextPage)
-        }.map {
-            parsePagingInfo(it.response()?.headers())
+            if (networkChecker.isNetworkConnected()) {
+                gitHubService.getUsers(keyword, nextPage)
+            } else {
+                Single.error(NoConnectionException())
+            }
+        }.map { result ->
+            // Check http response status
+            val httpCode = result.response()?.code()
+            if (httpCode != null) {
+                when {
+                    httpCode in 400..499 -> throw ClientException(httpCode)
+                    httpCode >= 500 -> throw ServerException(httpCode)
+                }
+            }
+            if (result.isError) {
+                result.error()?.let { throw it } ?: throw UnknownAccessException(httpCode)
+            }
+
+            parsePagingInfo(result.response()?.headers())
                     .also { linkDataList ->
                         nextPage = linkDataList.find { data -> data.linkIndicator == "next" }?.number
                                 ?: 1
@@ -76,7 +98,7 @@ class GitHubUserRepository(
                         Timber.d("link: next=$nextPage, max=$maxPage")
                     }
 
-            it.response()?.body()?.items?.map(remoteDataMapper::toModel) ?: listOf()
+            result.response()?.body()?.items?.map(remoteDataMapper::toModel) ?: listOf()
         }.doOnSuccess {
             preferences.keyword = keyword
             preferences.nextPage = nextPage

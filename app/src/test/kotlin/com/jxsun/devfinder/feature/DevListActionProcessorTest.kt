@@ -72,6 +72,28 @@ class DevListActionProcessorTest {
     }
 
     @Test
+    fun `perform search action but encounter error`() {
+        val exception = Exception("test")
+        doReturn(Single.fromCallable { throw exception })
+                .`when`(userRepository)
+                .query(
+                        keyword = keyword,
+                        forceFetch = true
+                )
+
+        val testObserver = Observable.just(DevListAction.SearchAction(keyword = keyword))
+                .compose(sut.process())
+                .test()
+
+        testObserver.values().forEach {
+            println(it)
+        }
+        testObserver.assertValueCount(2)
+        testObserver.assertValueAt(0, DevListResult.InProgress(keyword = keyword))
+        testObserver.assertValueAt(1, DevListResult.Failure(keyword = keyword, error = exception))
+    }
+
+    @Test
     fun `perform load more action successfully`() {
         doReturn(Single.just(users))
                 .`when`(userRepository)
@@ -87,5 +109,27 @@ class DevListActionProcessorTest {
         testObserver.assertValueCount(2)
         testObserver.assertValueAt(0, DevListResult.InProgress(keyword = keyword))
         testObserver.assertValueAt(1, DevListResult.Success(keyword = keyword, userList = users))
+    }
+
+    @Test
+    fun `perform load more action but encounter error`() {
+        val exception = Exception("test")
+        doReturn(Single.fromCallable { throw exception })
+                .`when`(userRepository)
+                .query(
+                        keyword = keyword,
+                        forceFetch = true
+                )
+
+        val testObserver = Observable.just(DevListAction.LoadMoreAction(keyword = keyword))
+                .compose(sut.process())
+                .test()
+
+        testObserver.values().forEach {
+            println(it)
+        }
+        testObserver.assertValueCount(2)
+        testObserver.assertValueAt(0, DevListResult.InProgress(keyword = keyword))
+        testObserver.assertValueAt(1, DevListResult.Failure(keyword = keyword, error = exception))
     }
 }

@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.DecelerateInterpolator
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -14,6 +15,9 @@ import com.bartoszlipinski.viewpropertyobjectanimator.ViewPropertyObjectAnimator
 import com.jakewharton.rxbinding3.view.clicks
 import com.jxsun.devfinder.R
 import com.jxsun.devfinder.model.GitHubUser
+import com.jxsun.devfinder.model.exception.ClientException
+import com.jxsun.devfinder.model.exception.NoConnectionException
+import com.jxsun.devfinder.model.exception.ServerException
 import com.jxsun.devfinder.util.extention.hideSoftInput
 import com.jxsun.devfinder.util.extention.plusAssign
 import io.reactivex.Observable
@@ -95,7 +99,7 @@ class DevListFragment : Fragment() {
         }
 
         if (state.error != null) {
-            showError()
+            showError(state.error)
         } else if (state.userList.isNotEmpty() && !state.isLoading) {
             if (state.firstShow) {
                 val offsetViewBounds = Rect()
@@ -136,8 +140,17 @@ class DevListFragment : Fragment() {
         }
     }
 
-    private fun showError() {
-
+    private fun showError(error: Throwable) {
+        context?.let {
+            when (error) {
+                is ServerException -> R.string.server_error
+                is ClientException -> R.string.client_error
+                is NoConnectionException -> R.string.connectivity_error
+                else -> R.string.unknown_error
+            }.let { resId ->
+                Toast.makeText(it, getString(resId), Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     private fun showDevelopers(keyword: String, devList: List<GitHubUser>) {
