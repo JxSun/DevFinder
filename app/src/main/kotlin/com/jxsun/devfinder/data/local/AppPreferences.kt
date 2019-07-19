@@ -22,15 +22,15 @@ class AppPreferences(
         }
 
     var nextPage: Int
-        get() = preferences.getInt(KEY_NEXT_PAGE, 1)
+        get() = preferences.getInt(KEY_NEXT_PAGE, -1)
         set(value) {
             preferences.edit {
                 it.putInt(KEY_NEXT_PAGE, value)
             }
         }
 
-    var maxPage: Int
-        get() = preferences.getInt(KEY_MAX_PAGE, 1)
+    var lastPage: Int
+        get() = preferences.getInt(KEY_MAX_PAGE, -1)
         set(value) {
             preferences.edit {
                 it.putInt(KEY_MAX_PAGE, value)

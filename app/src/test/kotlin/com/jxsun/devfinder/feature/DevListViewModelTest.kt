@@ -35,8 +35,8 @@ class DevListViewModelTest {
         val processedResult = ObservableTransformer<DevListAction.InitialAction, DevListResult> {
             it.flatMap {
                 Observable.fromArray(
-                        DevListResult.InProgress(keyword = ""),
-                        DevListResult.Success(keyword = "", userList = listOf())
+                        DevListResult.InProgress(keyword = "", nextPage = 0, lastPage = 0),
+                        DevListResult.Success(keyword = "", nextPage = 5, lastPage = 100, userList = listOf())
                 )
             }
         }
@@ -48,10 +48,10 @@ class DevListViewModelTest {
 
         verify(actionProcessor).process()
         testObserver.assertValueAt(1) {
-            it.firstShow && it.isLoading && it.keyword.isEmpty() && it.userList.isEmpty() && it.error == null
+            it.isLoading && it.keyword.isEmpty() && it.nextPage == 0 && it.lastPage == 0 && it.userList.isEmpty() && it.error == null
         }
         testObserver.assertValueAt(2) {
-            it.firstShow && !it.isLoading && it.keyword.isEmpty() && it.userList.isEmpty() && it.error == null
+            !it.isLoading && it.keyword.isEmpty() && it.nextPage == 5 && it.lastPage == 100 && it.userList.isEmpty() && it.error == null
         }
     }
 
@@ -61,14 +61,16 @@ class DevListViewModelTest {
         val processedResult = ObservableTransformer<DevListAction.SearchAction, DevListResult> {
             it.flatMap {
                 Observable.fromArray(
-                        DevListResult.InProgress(keyword = keyword),
+                        DevListResult.InProgress(keyword = keyword, nextPage = 0, lastPage = 0),
                         DevListResult.Success(
                                 keyword = keyword,
+                                nextPage = 2,
+                                lastPage = 100,
                                 userList = listOf(GitHubUser(
                                         id = 9999,
                                         loginName = "Josh",
-                                        avatarUrl = "")
-                                )
+                                        avatarUrl = ""
+                                ))
                         )
                 )
             }
@@ -81,10 +83,10 @@ class DevListViewModelTest {
 
         verify(actionProcessor).process()
         testObserver.assertValueAt(1) {
-            it.firstShow && it.isLoading && it.keyword == keyword && it.userList.isEmpty() && it.error == null
+            it.isLoading && it.keyword == keyword && it.nextPage == 0 && it.lastPage == 0 && it.userList.isEmpty() && it.error == null
         }
         testObserver.assertValueAt(2) {
-            it.firstShow && !it.isLoading && it.keyword == keyword && it.userList.size == 1 && it.error == null
+            !it.isLoading && it.keyword == keyword && it.nextPage == 2 && it.lastPage == 100 && it.userList.size == 1 && it.error == null
         }
     }
 
@@ -94,14 +96,16 @@ class DevListViewModelTest {
         val processedResult = ObservableTransformer<DevListAction.LoadMoreAction, DevListResult> {
             it.flatMap {
                 Observable.fromArray(
-                        DevListResult.InProgress(keyword = keyword),
+                        DevListResult.InProgress(keyword = keyword, nextPage = 5, lastPage = 100),
                         DevListResult.Success(
                                 keyword = keyword,
+                                nextPage = 6,
+                                lastPage = 100,
                                 userList = listOf(GitHubUser(
                                         id = 9999,
                                         loginName = "Josh",
-                                        avatarUrl = "")
-                                )
+                                        avatarUrl = ""
+                                ))
                         )
                 )
             }
@@ -110,14 +114,14 @@ class DevListViewModelTest {
         doReturn(processedResult).`when`(actionProcessor).process()
 
         val testObserver = sut.states().test()
-        sut.processIntent(Observable.just(DevListIntent.LoadMoreIntent(keyword = keyword)))
+        sut.processIntent(Observable.just(DevListIntent.LoadMoreIntent(keyword = keyword, nextPage = 5, lastPage = 100)))
 
         verify(actionProcessor).process()
         testObserver.assertValueAt(1) {
-            it.firstShow && it.isLoading && it.keyword == keyword && it.userList.isEmpty() && it.error == null
+            it.isLoading && it.keyword == keyword && it.nextPage == 5 && it.lastPage == 100 && it.userList.isEmpty() && it.error == null
         }
         testObserver.assertValueAt(2) {
-            it.firstShow && !it.isLoading && it.keyword == keyword && it.userList.size == 1 && it.error == null
+            !it.isLoading && it.keyword == keyword && it.nextPage == 6 && it.lastPage == 100 && it.userList.size == 1 && it.error == null
         }
     }
 }

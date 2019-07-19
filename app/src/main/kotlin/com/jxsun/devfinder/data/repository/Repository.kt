@@ -6,14 +6,16 @@ import io.reactivex.Single
 
 interface Repository<T> {
 
-    fun loadCached(): Single<CachedGitHubUsers>
+    fun loadCached(): Single<GitHubUserResult>
 
-    fun query(keyword: String, forceFetch: Boolean = false): Single<List<GitHubUser>>
+    fun query(keyword: String, nextPage: Int): Single<GitHubUserResult>
 
     fun clear(): Completable
 
-    data class CachedGitHubUsers(
-            val keyword: String,
-            val users: List<GitHubUser>
+    data class GitHubUserResult(
+            val keyword: String = "",
+            val nextPage: Int = -1,
+            val lastPage: Int = -1,
+            val users: List<GitHubUser> = listOf()
     )
 }

@@ -81,7 +81,9 @@ class DevListFragment : Fragment() {
         return onScrollListener.reloadSubject
                 .map {
                     DevListIntent.LoadMoreIntent(
-                            keyword = searchInput.text.toString()
+                            keyword = searchInput.text.toString(),
+                            nextPage = devListViewModel.lastViewState.nextPage,
+                            lastPage = devListViewModel.lastViewState.lastPage
                     )
                 }
     }
@@ -96,9 +98,9 @@ class DevListFragment : Fragment() {
 
         if (state.error != null) {
             showError(state.error)
-        } else if (state.userList.isNotEmpty() && !state.isLoading) {
+        } else if (!state.isLoading) {
             searchInput.setText(state.keyword)
-            showDevelopers(state.keyword, state.userList)
+            showDevelopers(state.keyword, state.nextPage, state.userList)
         }
     }
 
@@ -115,8 +117,8 @@ class DevListFragment : Fragment() {
         }
     }
 
-    private fun showDevelopers(keyword: String, devList: List<GitHubUser>) {
-        recyclerViewAdapter.addDevList(keyword, devList)
+    private fun showDevelopers(keyword: String, nextPage: Int, devList: List<GitHubUser>) {
+        recyclerViewAdapter.updateDevList(keyword, nextPage, devList)
     }
 
     override fun onDestroyView() {

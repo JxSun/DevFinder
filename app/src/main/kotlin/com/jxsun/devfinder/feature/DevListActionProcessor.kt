@@ -5,6 +5,7 @@ import com.jxsun.devfinder.model.GitHubUser
 import com.jxsun.devfinder.mvi.MviActionProcessor
 import io.reactivex.Observable
 import io.reactivex.ObservableTransformer
+import io.reactivex.Single
 import io.reactivex.schedulers.Schedulers
 import timber.log.Timber
 
@@ -13,75 +14,70 @@ class DevListActionProcessor(
 ) : MviActionProcessor<DevListAction, DevListResult> {
 
     private fun processInitialAction(): ObservableTransformer<DevListAction.InitialAction, DevListResult> {
-        return ObservableTransformer { action ->
-            action.flatMap<DevListResult> {
+        return ObservableTransformer { upstream ->
+            upstream.flatMap<DevListResult> { action ->
                 userRepository.loadCached()
                         .subscribeOn(Schedulers.io())
                         .toObservable()
-                        .map {
+                        .map { result ->
                             DevListResult.Success(
-                                    keyword = it.keyword,
-                                    userList = it.users
+                                    keyword = result.keyword,
+                                    nextPage = result.nextPage,
+                                    lastPage = result.lastPage,
+                                    userList = result.users
                             )
                         }
                         .cast(DevListResult::class.java)
-                        .startWith(DevListResult.InProgress(keyword = ""))
+                        .startWith(DevListResult.InProgress(
+                                keyword = "",
+                                nextPage = 0,
+                                lastPage = 0
+                        ))
             }
         }
     }
 
     private fun processSearchAction(): ObservableTransformer<DevListAction.SearchAction, DevListResult> {
-        return ObservableTransformer { action ->
-            action.flatMap<DevListResult> {
-                Timber.v("search for ${it.keyword}")
-                userRepository.query(keyword = it.keyword, forceFetch = true)
+        return ObservableTransformer { upstream ->
+            upstream.flatMap<DevListResult> { action ->
+                Timber.v("search: ${action.keyword}, next: ${action.nextPage}, last: ${action.lastPage}")
+                when {
+                    action.lastPage == -1 -> userRepository.query(keyword = action.keyword, nextPage = 1)
+                    action.nextPage < action.lastPage -> userRepository.query(keyword = action.keyword, nextPage = action.nextPage)
+                    else -> // Already reach the end
+                        Single.just(Repository.GitHubUserResult(
+                                keyword = action.keyword,
+                                nextPage = action.nextPage,
+                                lastPage = action.lastPage,
+                                users = listOf()
+                        ))
+                }
                         .subscribeOn(Schedulers.io())
                         .toObservable()
                         .map { result ->
                             DevListResult.Success(
-                                    keyword = it.keyword,
-                                    userList = result
+                                    keyword = action.keyword,
+                                    nextPage = result.nextPage,
+                                    lastPage = result.lastPage,
+                                    userList = result.users
                             )
                         }
                         .cast(DevListResult::class.java)
                         .onErrorResumeNext { throwable: Throwable ->
                             Observable.just(
                                     DevListResult.Failure(
-                                            keyword = it.keyword,
+                                            keyword = action.keyword,
+                                            nextPage = action.nextPage,
+                                            lastPage = action.lastPage,
                                             error = throwable
                                     )
                             )
                         }
-                        .startWith(DevListResult.InProgress(keyword = it.keyword))
-            }
-        }
-    }
-
-    private fun processLoadMoreAction(): ObservableTransformer<DevListAction.LoadMoreAction, DevListResult> {
-        return ObservableTransformer { action ->
-            action.flatMap<DevListResult> {
-                userRepository.query(
-                        keyword = it.keyword,
-                        forceFetch = true
-                )
-                        .subscribeOn(Schedulers.io())
-                        .toObservable()
-                        .map { result ->
-                            DevListResult.Success(
-                                    keyword = it.keyword,
-                                    userList = result
-                            )
-                        }
-                        .cast(DevListResult::class.java)
-                        .onErrorResumeNext { throwable: Throwable ->
-                            Observable.just(
-                                    DevListResult.Failure(
-                                            keyword = it.keyword,
-                                            error = throwable
-                                    )
-                            )
-                        }
-                        .startWith(DevListResult.InProgress(keyword = it.keyword))
+                        .startWith(DevListResult.InProgress(
+                                keyword = action.keyword,
+                                nextPage = action.nextPage,
+                                lastPage = action.lastPage
+                        ))
             }
         }
     }
@@ -95,7 +91,14 @@ class DevListActionProcessor(
                         shared.ofType(DevListAction.SearchAction::class.java)
                                 .compose(processSearchAction()),
                         shared.ofType(DevListAction.LoadMoreAction::class.java)
-                                .compose(processLoadMoreAction())
+                                .map {
+                                    DevListAction.SearchAction(
+                                            keyword = it.keyword,
+                                            nextPage = it.nextPage,
+                                            lastPage = it.lastPage
+                                    )
+                                }
+                                .compose(processSearchAction())
                 ).mergeWith(
                         shared.filter {
                             it !is DevListAction.InitialAction
