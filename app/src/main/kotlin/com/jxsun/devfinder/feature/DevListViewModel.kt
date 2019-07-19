@@ -17,7 +17,7 @@ class DevListViewModel(
     private val intentFilter = ObservableTransformer<DevListIntent, DevListIntent> {
         it.publish { shared ->
             Observable.merge(
-                    shared.ofType(DevListIntent.InitialIntent::class.java),//.take(1),
+                    shared.ofType(DevListIntent.InitialIntent::class.java).take(1),
                     shared.ofType(DevListIntent.SearchIntent::class.java),
                     shared.ofType(DevListIntent.LoadMoreIntent::class.java)
             )

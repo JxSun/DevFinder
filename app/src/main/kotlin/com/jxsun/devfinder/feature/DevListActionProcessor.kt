@@ -25,7 +25,7 @@ class DevListActionProcessor(
                             )
                         }
                         .cast(DevListResult::class.java)
-                        .startWith(DevListResult.InProgress(""))
+                        .startWith(DevListResult.InProgress(keyword = ""))
             }
         }
     }
@@ -44,7 +44,7 @@ class DevListActionProcessor(
                             )
                         }
                         .cast(DevListResult::class.java)
-                        .startWith(DevListResult.InProgress(it.keyword))
+                        .startWith(DevListResult.InProgress(keyword = it.keyword))
             }
         }
     }
@@ -65,7 +65,7 @@ class DevListActionProcessor(
                             )
                         }
                         .cast(DevListResult::class.java)
-                        .startWith(DevListResult.InProgress(it.keyword))
+                        .startWith(DevListResult.InProgress(keyword = it.keyword))
             }
         }
     }

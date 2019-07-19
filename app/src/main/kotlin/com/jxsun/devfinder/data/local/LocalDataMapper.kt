@@ -4,7 +4,7 @@ import com.jxsun.devfinder.data.local.database.GitHubUserEntity
 import com.jxsun.devfinder.data.repository.Mapper
 import com.jxsun.devfinder.model.GitHubUser
 
-class LocalDataMapper :Mapper<GitHubUserEntity> {
+class LocalDataMapper : Mapper<GitHubUserEntity> {
 
     override fun toModel(implData: GitHubUserEntity): GitHubUser {
         return GitHubUser(
