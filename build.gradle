@@ -12,6 +12,7 @@ buildscript {
             'koin'            : '2.0.1',
             'ktx'             : '1.0.2',
             'lifecycle'       : '2.2.0-alpha02',
+            'leakCanary'      : '2.0-alpha-3',
             'junit'           : '4.12',
             'mockitoKotlin'   : '2.1.0',
             'okhttp'          : '3.12.0',
@@ -20,6 +21,7 @@ buildscript {
             'rxJava'          : '2.2.8',
             'rxBinding'       : '3.0.0-alpha2',
             'recyclerView'    : '1.0.0',
+            'room'            : '2.1.0',
             'timber'          : '4.7.1',
             'testRunner'      : '1.2.0'
     ]
