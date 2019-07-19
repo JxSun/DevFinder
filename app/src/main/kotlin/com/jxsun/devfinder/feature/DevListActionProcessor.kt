@@ -44,6 +44,14 @@ class DevListActionProcessor(
                             )
                         }
                         .cast(DevListResult::class.java)
+                        .onErrorResumeNext { throwable: Throwable ->
+                            Observable.just(
+                                    DevListResult.Failure(
+                                            keyword = it.keyword,
+                                            error = throwable
+                                    )
+                            )
+                        }
                         .startWith(DevListResult.InProgress(keyword = it.keyword))
             }
         }
@@ -65,6 +73,14 @@ class DevListActionProcessor(
                             )
                         }
                         .cast(DevListResult::class.java)
+                        .onErrorResumeNext { throwable: Throwable ->
+                            Observable.just(
+                                    DevListResult.Failure(
+                                            keyword = it.keyword,
+                                            error = throwable
+                                    )
+                            )
+                        }
                         .startWith(DevListResult.InProgress(keyword = it.keyword))
             }
         }

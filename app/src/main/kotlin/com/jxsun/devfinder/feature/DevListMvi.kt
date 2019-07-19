@@ -30,7 +30,7 @@ sealed class DevListResult : MviResult {
 
     data class Failure(
             val keyword: String,
-            val error: Throwable
+            val error: Throwable?
     ) : DevListResult()
 }
 
