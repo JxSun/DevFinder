@@ -46,6 +46,11 @@ android {
             }
         }
     }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
 }
 
 dependencies {
@@ -56,6 +61,7 @@ dependencies {
     implementation "androidx.recyclerview:recyclerview:${versions.recyclerView}"
     implementation "androidx.constraintlayout:constraintlayout:${versions.constraintLayout}"
     implementation "androidx.lifecycle:lifecycle-extensions:${versions.lifecycle}"
+    implementation "com.google.android.material:material:${versions.material}"
 
     implementation "androidx.room:room-runtime:${versions.room}"
     implementation "androidx.room:room-rxjava2:${versions.room}"
@@ -81,8 +87,6 @@ dependencies {
     implementation "com.squareup.retrofit2:converter-gson:${versions.retrofit}"
     implementation "com.squareup.okhttp3:logging-interceptor:${versions.okhttp}"
     implementation "com.squareup.okhttp3:mockwebserver:${versions.okhttp}"
-
-    implementation 'com.bartoszlipinski:viewpropertyobjectanimator:1.4.5'
 
     debugImplementation "com.squareup.leakcanary:leakcanary-android:${versions.leakCanary}"
 

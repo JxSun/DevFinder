@@ -32,7 +32,6 @@ class DevListViewModel(
                     isLoading = true
             )
             is DevListResult.Success -> prevState.copy(
-                    firstShow = prevState.firstShow && prevState.userList.isEmpty(),
                     keyword = result.keyword,
                     userList = result.userList,
                     isLoading = false,

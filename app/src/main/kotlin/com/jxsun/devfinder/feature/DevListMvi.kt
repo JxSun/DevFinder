@@ -35,7 +35,6 @@ sealed class DevListResult : MviResult {
 }
 
 data class DevListViewState(
-        val firstShow: Boolean,
         val keyword: String,
         val isLoading: Boolean,
         val userList: List<GitHubUser>,
@@ -43,7 +42,6 @@ data class DevListViewState(
 ) : MviViewState {
     companion object {
         val IDLE = DevListViewState(
-                firstShow = true,
                 keyword = "",
                 isLoading = false,
                 userList = listOf(),

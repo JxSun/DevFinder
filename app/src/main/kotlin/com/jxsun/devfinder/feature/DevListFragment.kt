@@ -1,17 +1,13 @@
 package com.jxsun.devfinder.feature
 
-import android.animation.Animator
-import android.graphics.Rect
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.DecelerateInterpolator
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.bartoszlipinski.viewpropertyobjectanimator.ViewPropertyObjectAnimator
 import com.jakewharton.rxbinding3.view.clicks
 import com.jxsun.devfinder.R
 import com.jxsun.devfinder.model.GitHubUser
@@ -101,42 +97,8 @@ class DevListFragment : Fragment() {
         if (state.error != null) {
             showError(state.error)
         } else if (state.userList.isNotEmpty() && !state.isLoading) {
-            if (state.firstShow) {
-                val offsetViewBounds = Rect()
-                searchBar.getDrawingRect(offsetViewBounds)
-                container.offsetDescendantRectToMyCoords(searchBar, offsetViewBounds)
-
-                ViewPropertyObjectAnimator
-                        .animate(searchBar)
-                        .setDuration(500)
-                        .setInterpolator(DecelerateInterpolator())
-                        .margin(0)
-                        .translationY(-offsetViewBounds.top.toFloat())
-                        .addListener(object : Animator.AnimatorListener {
-                            override fun onAnimationRepeat(animation: Animator?) {
-                            }
-
-                            override fun onAnimationEnd(animation: Animator?) {
-                                searchBar.clearAnimation()
-                                recyclerView.visibility = View.VISIBLE
-                                showDevelopers(state.keyword, state.userList)
-                                searchBar.visibility = View.VISIBLE
-                                searchBar.isClickable = true
-                            }
-
-                            override fun onAnimationCancel(animation: Animator?) {
-                            }
-
-                            override fun onAnimationStart(animation: Animator?) {
-                            }
-                        })
-                        .start()
-
-                searchBar.isClickable = false
-                searchInput.setText(state.keyword)
-            } else {
-                showDevelopers(state.keyword, state.userList)
-            }
+            searchInput.setText(state.keyword)
+            showDevelopers(state.keyword, state.userList)
         }
     }
 
