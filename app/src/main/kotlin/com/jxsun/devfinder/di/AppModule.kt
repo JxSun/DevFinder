@@ -1,9 +1,11 @@
 package com.jxsun.devfinder.di
 
 import com.jxsun.devfinder.data.local.AppPreferences
+import com.jxsun.devfinder.data.local.LocalDataMapper
 import com.jxsun.devfinder.data.local.database.AppDatabase
 import com.jxsun.devfinder.data.remote.GitHubService
 import com.jxsun.devfinder.data.remote.GitHubServiceImpl
+import com.jxsun.devfinder.data.remote.RemoteDataMapper
 import com.jxsun.devfinder.data.repository.GitHubUserRepository
 import com.jxsun.devfinder.data.repository.Repository
 import com.jxsun.devfinder.feature.DevListActionProcessor
@@ -18,11 +20,16 @@ val appModule = module {
 
     single { AppPreferences(androidContext()) }
 
+    single { LocalDataMapper() }
+    single { RemoteDataMapper() }
+
     single<Repository<GitHubUser>> {
         GitHubUserRepository(
                 gitHubService = get(),
-                database = AppDatabase.getInstance(androidContext()),
-                preferences = get()
+                userDao = AppDatabase.getInstance(androidContext()).userDao(),
+                preferences = get(),
+                localDataMapper = get(),
+                remoteDataMapper = get()
         )
     }
 

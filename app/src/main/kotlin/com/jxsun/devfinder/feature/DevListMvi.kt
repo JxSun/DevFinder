@@ -24,7 +24,10 @@ sealed class DevListResult : MviResult {
             val userList: List<GitHubUser>
     ) : DevListResult()
 
-    object InProgress : DevListResult()
+    data class InProgress(
+            val keyword: String
+    ) : DevListResult()
+
     data class Failure(
             val keyword: String,
             val error: Throwable

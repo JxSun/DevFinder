@@ -1,9 +1,11 @@
 package com.jxsun.devfinder.data.repository
 
+import androidx.annotation.VisibleForTesting
 import com.jxsun.devfinder.data.local.AppPreferences
-import com.jxsun.devfinder.data.local.database.AppDatabase
-import com.jxsun.devfinder.data.local.database.GitHubUserEntity
+import com.jxsun.devfinder.data.local.LocalDataMapper
+import com.jxsun.devfinder.data.local.database.GitHubUserDao
 import com.jxsun.devfinder.data.remote.GitHubService
+import com.jxsun.devfinder.data.remote.RemoteDataMapper
 import com.jxsun.devfinder.model.GitHubUser
 import io.reactivex.Completable
 import io.reactivex.Single
@@ -13,15 +15,19 @@ import java.util.regex.Pattern
 
 class GitHubUserRepository(
         private val gitHubService: GitHubService,
-        private val database: AppDatabase,
-        private val preferences: AppPreferences
+        private val userDao: GitHubUserDao,
+        private val preferences: AppPreferences,
+        private val localDataMapper: LocalDataMapper,
+        private val remoteDataMapper: RemoteDataMapper
 ) : Repository<GitHubUser> {
 
     @Volatile
-    private var nextPage = 1
+    @VisibleForTesting
+    var nextPage = 1
 
     @Volatile
-    private var maxPage = 1
+    @VisibleForTesting
+    var maxPage = 1
 
     override fun loadCached(): Single<Repository.CachedGitHubUsers> {
         return Single.defer {
@@ -29,18 +35,12 @@ class GitHubUserRepository(
             nextPage = preferences.nextPage
             maxPage = preferences.maxPage
             if (keyword.isNotBlank()) {
-                database.userDao().getAll()
+                userDao.getAll()
                         .firstOrError()
                         .map {
                             Repository.CachedGitHubUsers(
                                     keyword = keyword,
-                                    users = it.map { entity ->
-                                        GitHubUser(
-                                                id = entity.id,
-                                                loginName = entity.loginName,
-                                                avatarUrl = entity.avatarUrl
-                                        )
-                                    }
+                                    users = it.map(localDataMapper::toModel)
                             )
                         }
                         .doOnSuccess { Timber.d("cached loaded") }
@@ -61,7 +61,7 @@ class GitHubUserRepository(
                 preferences.keyword = keyword
                 nextPage = 1
                 maxPage = 1
-                database.userDao().clear()
+                userDao.clear()
             }
             keyword
         }.flatMap {
@@ -76,26 +76,14 @@ class GitHubUserRepository(
                         Timber.d("link: next=$nextPage, max=$maxPage")
                     }
 
-            it.response()?.body()?.items?.map { response ->
-                GitHubUser(
-                        id = response.id,
-                        loginName = response.name,
-                        avatarUrl = response.avatarUrl
-                )
-            } ?: listOf()
+            it.response()?.body()?.items?.map(remoteDataMapper::toModel) ?: listOf()
         }.doOnSuccess {
             preferences.keyword = keyword
             preferences.nextPage = nextPage
             preferences.maxPage = maxPage
 
             it.forEach { user ->
-                database.userDao().upsert(
-                        GitHubUserEntity(
-                                id = user.id,
-                                loginName = user.loginName,
-                                avatarUrl = user.avatarUrl
-                        )
-                )
+                userDao.upsert(localDataMapper.fromModel(user))
             }
         }
     }
@@ -132,7 +120,7 @@ class GitHubUserRepository(
             preferences.keyword = ""
             preferences.nextPage = 1
             preferences.maxPage = 1
-            database.userDao().clear()
+            userDao.clear()
         }
     }
 

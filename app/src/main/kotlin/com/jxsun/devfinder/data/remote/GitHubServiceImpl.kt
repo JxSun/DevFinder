@@ -34,7 +34,12 @@ class GitHubServiceImpl : GitHubService {
                 .build()
     }
 
-    override fun getUsers(query: String, page: Int, clientId: String, clientSecret: String): Single<Result<GitHubResponse<UserResponse>>> {
+    override fun getUsers(
+            query: String,
+            page: Int,
+            clientId: String,
+            clientSecret: String
+    ): Single<Result<GitHubResponse<UserResponse>>> {
         return service.getUsers(query, page, clientId, clientSecret)
     }
 }
