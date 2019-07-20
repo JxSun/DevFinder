@@ -1,4 +1,4 @@
-package com.jxsun.devfinder.data.remote
+package com.jxsun.devfinder.data.source.remote
 
 import com.google.gson.annotations.SerializedName
 

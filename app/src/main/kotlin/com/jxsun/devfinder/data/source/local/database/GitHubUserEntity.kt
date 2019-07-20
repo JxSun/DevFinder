@@ -1,4 +1,4 @@
-package com.jxsun.devfinder.data.local.database
+package com.jxsun.devfinder.data.source.local.database
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
