@@ -1,4 +1,4 @@
-package com.jxsun.devfinder.data.remote
+package com.jxsun.devfinder.data.source.remote
 
 import com.jxsun.devfinder.model.exception.ClientException
 import com.jxsun.devfinder.model.exception.ServerException
@@ -15,7 +15,7 @@ private const val NEXT_PAGE_HEADER = "next"
 private const val LAST_PAGE_HEADER = "last"
 private const val LINK_FIELD_PATTERN = "(?<=page=)(\\d+)|(?<=rel=\").+?(?=\")"
 
-data class ResultData(
+data class ResponseData(
         val link: Link,
         val userDataList: List<UserResponse>
 ) {
@@ -25,9 +25,9 @@ data class ResultData(
     )
 }
 
-class ResultDataParser {
+class ResponseDataParser {
 
-    fun parse(): SingleTransformer<Result<GitHubResponse<UserResponse>>, ResultData> {
+    fun parse(): SingleTransformer<Result<GitHubResponse<UserResponse>>, ResponseData> {
         return SingleTransformer { upstream ->
             upstream.flatMap { result ->
                 // Check http response status
@@ -48,7 +48,7 @@ class ResultDataParser {
                         }
                 val userList = result.response()?.body()?.items ?: listOf()
 
-                Single.just(ResultData(
+                Single.just(ResponseData(
                         link = link,
                         userDataList = userList
                 ))
@@ -59,7 +59,7 @@ class ResultDataParser {
     /**
      * Parses the paging information from the Link header.
      */
-    private fun parsePagingInfo(headers: Headers?): ResultData.Link {
+    private fun parsePagingInfo(headers: Headers?): ResponseData.Link {
         return headers?.get(LINK_HEADER)?.let { data ->
             val pattern = Pattern.compile(LINK_FIELD_PATTERN)
             val matcher = pattern.matcher(data)
@@ -79,7 +79,7 @@ class ResultDataParser {
                     parseNumber = true
                 }
             }
-            ResultData.Link(nextPage, lastPage)
-        } ?: ResultData.Link(0, 0)
+            ResponseData.Link(nextPage, lastPage)
+        } ?: ResponseData.Link(0, 0)
     }
 }

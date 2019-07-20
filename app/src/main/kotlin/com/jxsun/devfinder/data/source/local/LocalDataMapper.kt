@@ -1,6 +1,6 @@
-package com.jxsun.devfinder.data.local
+package com.jxsun.devfinder.data.source.local
 
-import com.jxsun.devfinder.data.local.database.GitHubUserEntity
+import com.jxsun.devfinder.data.source.local.database.GitHubUserEntity
 import com.jxsun.devfinder.data.repository.Mapper
 import com.jxsun.devfinder.model.GitHubUser
 

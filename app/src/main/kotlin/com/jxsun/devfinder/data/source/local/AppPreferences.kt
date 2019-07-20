@@ -1,4 +1,4 @@
-package com.jxsun.devfinder.data.local
+package com.jxsun.devfinder.data.source.local
 
 import android.content.Context
 import com.jxsun.devfinder.util.extention.edit

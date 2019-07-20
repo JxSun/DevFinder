@@ -17,5 +17,9 @@ interface Repository<T> {
             val nextPage: Int = -1,
             val lastPage: Int = -1,
             val users: List<GitHubUser> = listOf()
-    )
+    ) {
+        companion object {
+            val EMPTY = GitHubUserResult()
+        }
+    }
 }
